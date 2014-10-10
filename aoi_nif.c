@@ -7,7 +7,7 @@
 struct aoi_space_nif{
     struct aoi_space* space;
     ErlNifEnv* send_env;
-    ErlNifPid* self_pid;
+    ErlNifPid self_pid;
 };
 
 struct aoi_send_ud{
@@ -40,7 +40,7 @@ static void
 aoi_callback(void *ud, uint32_t watcher, uint32_t marker){
     struct aoi_send_ud *AoiSendUd = ud;
     struct aoi_space_nif *AoiSpaceNif = AoiSendUd->space_nif;
-    enif_send(AoiSendUd->env, AoiSpaceNif->self_pid, AoiSpaceNif->send_env, 
+    enif_send(AoiSendUd->env, &AoiSpaceNif->self_pid, AoiSpaceNif->send_env, 
             enif_make_tuple3(
                 AoiSpaceNif->send_env, 
                 enif_make_atom(AoiSpaceNif->send_env, "aoi_msg"), 
@@ -48,6 +48,7 @@ aoi_callback(void *ud, uint32_t watcher, uint32_t marker){
                 enif_make_uint(AoiSpaceNif->send_env, marker)
                 )
             );
+    //fprintf(stderr, "aoi_callback=%d:%d", watcher, marker),
     enif_clear_env(AoiSpaceNif->send_env);
 }
 
@@ -65,13 +66,11 @@ aoi_unload(ErlNifEnv *env, void *priv_data){
 
 static ERL_NIF_TERM 
 aoi_create_nif(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]){
-    ErlNifPid* self_pid;
-    enif_self(env, self_pid);
 
     struct aoi_space_nif *AoiSpaceNif = enif_alloc_resource(AoiSpaceResourceType,sizeof(struct aoi_space_nif));
     AoiSpaceNif->space = aoi_create(aoi_alloc, NULL);
     AoiSpaceNif->send_env = enif_alloc_env();
-    AoiSpaceNif->self_pid = self_pid;
+    enif_self(env, &AoiSpaceNif->self_pid);
 
     ERL_NIF_TERM result = enif_make_resource(env, AoiSpaceNif);
     enif_release_resource(AoiSpaceNif);
@@ -100,6 +99,8 @@ aoi_update_nif(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]){
     enif_get_double(env, argv[5], &pos[2]);
 
     float pos1[3] = {pos[0], pos[1], pos[2]};
+
+    //fprintf(stderr, "pos=%f:%f:%f", pos[0], pos[1], pos[2]),
 
     aoi_update(AoiSpaceNif->space, id, mode, pos1);
 

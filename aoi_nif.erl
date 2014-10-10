@@ -1,5 +1,5 @@
 -module(aoi_nif).
--export([load/0,create/0,update/6,message/1]).
+-export([create/0,update/6,message/1]).
 
 -on_load(load/0).
 
